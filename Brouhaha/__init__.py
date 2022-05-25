@@ -25,82 +25,63 @@
 
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
-
+from typing import Dict, Optional
 
 from ._version import get_versions
+
 __version__ = get_versions()['version']
 del get_versions
-
 
 import os.path as op
 from pyannote.database import Database
 from pyannote.database.protocol import SpeakerDiarizationProtocol
 from pyannote.parser import MDTMParser
 
-# this protocol defines a speaker diarization protocol: as such, a few methods
-# needs to be defined: trn_iter, dev_iter, and tst_iter.
 
-class MyProtocol1(SpeakerDiarizationProtocol):
-    """My first speaker diarization protocol """
+class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
 
-    def trn_iter(self):
+    def samples_loader(self, subset: str):
 
-        # absolute path to 'data' directory where annotations are stored
         data_dir = op.join(op.dirname(op.realpath(__file__)), 'data')
 
-        # in this example, we assume annotations are distributed in MDTM format.
-        # this is obviously not mandatory but pyannote.parser conveniently
-        # provides a built-in parser for MDTM files...
         annotations = MDTMParser().read(
             op.join(data_dir, 'protocol1.train.mdtm'))
 
-        # iterate over each file in training set
         for uri in sorted(annotations.uris):
-
             # get annotations as pyannote.core.Annotation instance
             annotation = annotations(uri)
 
-            # `trn_iter` (as well as `dev_iter` and `tst_iter`) are expected
-            # to yield dictionary with the following fields:
             yield {
                 # name of the database class
-                'database': 'MyDatabase',
+                'database': 'Brouhaha',
                 # unique file identifier
                 'uri': uri,
                 # reference as pyannote.core.Annotation instance
-                'annotation': annotation
+                'annotation': annotation,
+                'annotated': None,  # TODO from uem
+                'target_features': {}
             }
 
-            # optionally, an 'annotated' field can be added, whose value is
-            # a pyannote.core.Timeline instance containing the set of regions
-            # that were actually annotated (e.g. some files might only be
-            # partially annotated).
-
-            # this field can be used later to only evaluate those regions,
-            # for instance. whenever possible, please provide the 'annotated'
-            # field even if it trivially contains segment [0, file_duration].
-
+    def trn_iter(self):
+        for _ in []:
+            yield
 
     def dev_iter(self):
-        # here, you should do the same as above, but for the development set
         for _ in []:
             yield
 
     def tst_iter(self):
-        # here, you should do the same as above, but for the test set
         for _ in []:
             yield
 
-# this is where we define each protocol for this database.
-# without this, `pyannote.database.get_protocol` won't be able to find them...
 
-class MyDatabase(Database):
-    """MyDatabase database"""
+class Brouhaha(Database):
+    """Brouhaha database"""
 
-    def __init__(self, preprocessors={}, **kwargs):
-        super(MyDatabase, self).__init__(preprocessors=preprocessors, **kwargs)
+    def __init__(self, preprocessors: Optional[Dict]):
+        super().__init__(preprocessors=preprocessors)
 
         # register the first protocol: it will be known as
-        # MyDatabase.SpeakerDiarization.MyFirstProtocol
+        # Brouhaha.SpeakerDiarization.MyFirstProtocol
         self.register_protocol(
-            'SpeakerDiarization', 'MyFirstProtocol', MyProtocol1)
+            'SpeakerDiarization', 'NoisySpeakerDiarization', NoisySpeakerDiarization)

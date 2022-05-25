@@ -44,8 +44,8 @@ def get_config():
     cfg.tag_prefix = ""
     # replace mydatabase the same way you did in "setup.py"
     cfg.parentdir_prefix = "pyannote-db-mydatabase-"
-    # replace MyDatabase the same way you did in "setup.py"
-    cfg.versionfile_source = "MyDatabase/_version.py"
+    # replace Brouhaha the same way you did in "setup.py"
+    cfg.versionfile_source = "Brouhaha/_version.py"
     cfg.verbose = False
     return cfg
 

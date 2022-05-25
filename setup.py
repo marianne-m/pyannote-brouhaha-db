@@ -34,8 +34,8 @@ setup(
     # replace "mydatabase" by the name of your database
     name='pyannote.db.mydatabase',
 
-    # replace "MyDatabase" by the name of your database
-    description="MyDatabase plugin for pyannote-database",
+    # replace "Brouhaha" by the name of your database
+    description="Brouhaha plugin for pyannote-database",
 
     # replace with your information
     author='Hervé Bredin',
@@ -45,9 +45,9 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     packages=find_packages(),
 
-    # replace "MyDatabase" by the new name of MyDatabase directory
+    # replace "Brouhaha" by the new name of Brouhaha directory
     package_data={
-        'MyDatabase': [
+        'Brouhaha': [
             'data/*',
         ],
     },
@@ -68,9 +68,9 @@ setup(
         "Topic :: Scientific/Engineering"
     ],
 
-    # replace MyDatabase by the name of your database (using CamelCase)
+    # replace Brouhaha by the name of your database (using CamelCase)
     entry_points="""
         [pyannote.database.databases]
-        MyDatabase=MyDatabase:MyDatabase
+        Brouhaha=Brouhaha:Brouhaha
     """
 )
