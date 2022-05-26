@@ -1,55 +1,36 @@
-#!/usr/bin/env python
-# encoding: utf-8
-
-# The MIT License (MIT)
-
-# Copyright (c) 2017 CNRS
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-# AUTHORS
-# Hervé BREDIN - http://herve.niderb.fr
+from pathlib import Path
 from typing import Dict, Optional
+
+import numpy as np
+from pyannote.core import Annotation, Timeline, SlidingWindow, SlidingWindowFeature
+from pyannote.database.util import load_rttm, load_uem
 
 from ._version import get_versions
 
 __version__ = get_versions()['version']
 del get_versions
 
-import os.path as op
 from pyannote.database import Database
 from pyannote.database.protocol import SpeakerDiarizationProtocol
-from pyannote.parser import MDTMParser
 
 
 class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
+    C50_SLIDING_WINDOW = SlidingWindow()  # TODO
+    SNR_SLIDING_WINDOW = SlidingWindow()  # TODO
 
     def samples_loader(self, subset: str):
+        data_dir = Path("todo")
+        c50_dir = data_dir / "c50"
+        snr_dir = data_dir / "snr"
 
-        data_dir = op.join(op.dirname(op.realpath(__file__)), 'data')
+        annotations: Dict[str, Annotation] = load_rttm(str(data_dir / "babytrain.rttm"))
+        annotated: Dict[str, Timeline] = load_uem(str(data_dir / "babytrain.uem"))
 
-        annotations = MDTMParser().read(
-            op.join(data_dir, 'protocol1.train.mdtm'))
-
-        for uri in sorted(annotations.uris):
-            # get annotations as pyannote.core.Annotation instance
-            annotation = annotations(uri)
+        for uri, annotation in sorted(annotations.items()):
+            c50_array = np.load(str(c50_dir / uri + ".npy"))
+            snr_array = np.load(str(snr_dir / uri + ".npy"))
+            c50_feat = SlidingWindowFeature()
+            snr_feat = SlidingWindowFeature()
 
             yield {
                 # name of the database class
@@ -58,21 +39,18 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
                 'uri': uri,
                 # reference as pyannote.core.Annotation instance
                 'annotation': annotation,
-                'annotated': None,  # TODO from uem
+                'annotated': annotated[uri],
                 'target_features': {}
             }
 
     def trn_iter(self):
-        for _ in []:
-            yield
+        yield from self.samples_loader("train")
 
     def dev_iter(self):
-        for _ in []:
-            yield
+        yield from self.samples_loader("dev")
 
     def tst_iter(self):
-        for _ in []:
-            yield
+        yield from self.samples_loader("test")
 
 
 class Brouhaha(Database):
