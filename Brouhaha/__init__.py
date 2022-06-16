@@ -1,3 +1,4 @@
+import csv
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -15,8 +16,12 @@ from pyannote.database.protocol import SpeakerDiarizationProtocol
 
 
 class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
-    C50_SLIDING_WINDOW = SlidingWindow()  # TODO
-    SNR_SLIDING_WINDOW = SlidingWindow()  # TODO
+    SNR_SLIDING_WINDOW = SlidingWindow(duration=2.0, step=0.01, start=0)
+
+    @property
+    def c50_values(self) -> Dict[str, float]:
+        """Loads the C50 (reverb) values"""
+        raise  NotImplemented()
 
     def samples_loader(self, subset: str):
         data_dir = Path("todo")
@@ -27,10 +32,11 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
         annotated: Dict[str, Timeline] = load_uem(str(data_dir / "babytrain.uem"))
 
         for uri, annotation in sorted(annotations.items()):
-            c50_array = np.load(str(c50_dir / uri + ".npy"))
-            snr_array = np.load(str(snr_dir / uri + ".npy"))
-            c50_feat = SlidingWindowFeature()
-            snr_feat = SlidingWindowFeature()
+            with open(snr_dir / uri + ".npy") as snr_file:
+                csv_reader = csv.reader(snr_file, delimiter=" ")
+                snr_array = np.array([row[3] for row in csv_reader])
+            snr_array = np.expand_dims(snr_array, axis=1)
+            snr_feat = SlidingWindowFeature(snr_array, sliding_window=self.SNR_SLIDING_WINDOW)
 
             yield {
                 # name of the database class
@@ -40,7 +46,10 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
                 # reference as pyannote.core.Annotation instance
                 'annotation': annotation,
                 'annotated': annotated[uri],
-                'target_features': {}
+                'target_features': {
+                    "c50": self.c50_values[uri],
+                    "snr": snr_feat
+                }
             }
 
     def trn_iter(self):
