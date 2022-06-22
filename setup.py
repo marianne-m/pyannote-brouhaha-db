@@ -32,7 +32,7 @@ from setuptools import setup, find_packages
 
 setup(
     # replace "mydatabase" by the name of your database
-    name='pyannote.db.mydatabase',
+    name='pyannote.db.brouhaha',
 
     # replace "Brouhaha" by the name of your database
     description="Brouhaha plugin for pyannote-database",
