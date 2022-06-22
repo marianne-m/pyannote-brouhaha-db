@@ -18,23 +18,43 @@ from pyannote.database.protocol import SpeakerDiarizationProtocol
 class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
     SNR_SLIDING_WINDOW = SlidingWindow(duration=2.0, step=0.01, start=0)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._c50_values: Dict[str, float] = None
+        self._data_dir: Optional[Path] = None
+
+    @property
+    def data_dir(self) -> Path:
+        if self._data_dir is None:
+            raise AttributeError("Set data_dir before using the protocol")
+        return self._data_dir
+
+    @data_dir.setter
+    def data_dir(self, path: Path):
+        self._data_dir = path
+
     @property
     def c50_values(self) -> Dict[str, float]:
         """Loads the C50 (reverb) values"""
-        raise  NotImplemented()
+        if not self._c50_values:
+            with open(self.data_dir / "reverb_labels.txt") as reverb_labels_file:
+                reader = csv.reader(reverb_labels_file, delimiter=" ")
+                for row in reader:
+                    self._c50_values[row[0]] = float(row[1])
+
+        return self._c50_values
 
     def samples_loader(self, subset: str):
-        data_dir = Path("todo")
-        c50_dir = data_dir / "c50"
-        snr_dir = data_dir / "snr"
+        snr_dir = self.data_dir / "detailed_snr_labels"
+        rttm_dir = self.data_dir / "rttm_files"
 
-        annotations: Dict[str, Annotation] = load_rttm(str(data_dir / "babytrain.rttm"))
-        annotated: Dict[str, Timeline] = load_uem(str(data_dir / "babytrain.uem"))
+        # TODO: no annotated?
 
-        for uri, annotation in sorted(annotations.items()):
-            with open(snr_dir / uri + ".npy") as snr_file:
-                csv_reader = csv.reader(snr_file, delimiter=" ")
-                snr_array = np.array([row[3] for row in csv_reader])
+        for rttm_file in sorted(rttm_dir.iterdir()):
+            uri = rttm_file.stem
+            annotation = load_rttm(rttm_file)[uri]
+            # TODO: maybe use a specific mmap mode
+            snr_array = np.load(str(snr_dir / f"{uri}.npy"))
             snr_array = np.expand_dims(snr_array, axis=1)
             snr_feat = SlidingWindowFeature(snr_array, sliding_window=self.SNR_SLIDING_WINDOW)
 
@@ -45,7 +65,6 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
                 'uri': uri,
                 # reference as pyannote.core.Annotation instance
                 'annotation': annotation,
-                'annotated': annotated[uri],
                 'target_features': {
                     "c50": self.c50_values[uri],
                     "snr": snr_feat
