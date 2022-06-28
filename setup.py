@@ -31,26 +31,18 @@ import versioneer
 from setuptools import setup, find_packages
 
 setup(
-    # replace "mydatabase" by the name of your database
     name='pyannote.db.brouhaha',
 
-    # replace "Brouhaha" by the name of your database
     description="Brouhaha plugin for pyannote-database",
 
     # replace with your information
-    author='Hervé Bredin',
-    author_email='bredin@limsi.fr',
+    author='Hadrien Titeux',
+    author_email='hadrien.titeux@ens.fr',
 
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     packages=find_packages(),
 
-    # replace "Brouhaha" by the new name of Brouhaha directory
-    package_data={
-        'Brouhaha': [
-            'data/*',
-        ],
-    },
     include_package_data=True,
     install_requires=[
         'pyannote.database >= 0.11.2',
@@ -68,7 +60,6 @@ setup(
         "Topic :: Scientific/Engineering"
     ],
 
-    # replace Brouhaha by the name of your database (using CamelCase)
     entry_points="""
         [pyannote.database.databases]
         Brouhaha=Brouhaha:Brouhaha
