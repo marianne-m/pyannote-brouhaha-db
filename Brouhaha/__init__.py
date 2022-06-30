@@ -20,7 +20,6 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._c50_values: Dict[str, float] = None
         self._data_dir: Optional[Path] = None
 
     @property
@@ -33,21 +32,17 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
     def data_dir(self, path: Path):
         self._data_dir = path
 
-    @property
-    def c50_values(self) -> Dict[str, float]:
-        """Loads the C50 (reverb) values"""
-        if not self._c50_values:
-            with open(self.data_dir / "reverb_labels.txt") as reverb_labels_file:
-                reader = csv.reader(reverb_labels_file, delimiter=" ")
-                for row in reader:
-                    self._c50_values[row[0]] = float(row[1])
-
-        return self._c50_values
-
     def samples_loader(self, subset: str):
-        snr_dir = self.data_dir / "detailed_snr_labels"
-        rttm_dir = self.data_dir / "rttm_files"
+        subset_dir = self.data_dir / subset
+        snr_dir = subset_dir / "detailed_snr_labels"
+        rttm_dir = subset_dir / "rttm_files"
 
+        c50_values: Dict[str, float] = dict()
+        # loading c50 values
+        with open(subset_dir / "reverb_labels.txt") as reverb_labels_file:
+            reader = csv.reader(reverb_labels_file, delimiter=" ")
+            for row in reader:
+                c50_values[row[0]] = float(row[1])
         # TODO: no annotated?
 
         for rttm_file in sorted(rttm_dir.iterdir()):
@@ -66,7 +61,7 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
                 # reference as pyannote.core.Annotation instance
                 'annotation': annotation,
                 'target_features': {
-                    "c50": self.c50_values[uri],
+                    "c50": c50_values[uri],
                     "snr": snr_feat
                 }
             }
