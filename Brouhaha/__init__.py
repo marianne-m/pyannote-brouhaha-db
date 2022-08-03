@@ -15,6 +15,8 @@ from pyannote.database import Database
 from pyannote.database.protocol import SpeakerDiarizationProtocol
 
 
+C50_NO_REVERB = 60
+
 class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
     SNR_SLIDING_WINDOW = SlidingWindow(duration=2.0, step=0.01, start=0)
 
@@ -42,14 +44,18 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
         with open(subset_dir / "reverb_labels.txt") as reverb_labels_file:
             reader = csv.reader(reverb_labels_file, delimiter=" ")
             for row in reader:
-                c50_values[row[0]] = float(row[1])
+                c50_value = row[1]
+                if c50_value == 'None':
+                    c50_value = C50_NO_REVERB
+                c50_values[row[0]] = float(c50_value)
         # TODO: no annotated?
 
         for rttm_file in sorted(rttm_dir.iterdir()):
             uri = rttm_file.stem
             annotation = load_rttm(rttm_file)[uri]
+            annotated = Timeline([annotation.get_timeline().extent()])
             # TODO: maybe use a specific mmap mode
-            snr_array = np.load(str(snr_dir / f"{uri}.npy"))
+            snr_array = np.load(str(snr_dir / f"{uri}_snr.npy"))
             snr_array = np.expand_dims(snr_array, axis=1)
             snr_feat = SlidingWindowFeature(snr_array, sliding_window=self.SNR_SLIDING_WINDOW)
 
@@ -60,6 +66,7 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
                 'uri': uri,
                 # reference as pyannote.core.Annotation instance
                 'annotation': annotation,
+                'annotated': annotated,
                 'target_features': {
                     "c50": c50_values[uri],
                     "snr": snr_feat
@@ -79,8 +86,8 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
 class Brouhaha(Database):
     """Brouhaha database"""
 
-    def __init__(self, preprocessors: Optional[Dict]):
-        super().__init__(preprocessors=preprocessors)
+    def __init__(self, preprocessors={}, **kwargs):
+        super().__init__(preprocessors=preprocessors, **kwargs)
 
         # register the first protocol: it will be known as
         # Brouhaha.SpeakerDiarization.MyFirstProtocol
