@@ -3,7 +3,9 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import numpy as np
+from librosa import get_duration
 from pyannote.core import Annotation, Timeline, SlidingWindow, SlidingWindowFeature
+from pyannote.core.segment import Segment
 from pyannote.database.util import load_rttm, load_uem
 
 from ._version import get_versions
@@ -38,6 +40,7 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
         subset_dir = self.data_dir / subset
         snr_dir = subset_dir / "detailed_snr_labels"
         rttm_dir = subset_dir / "rttm_files"
+        audio_dir = subset_dir / "audio_16k"
 
         c50_values: Dict[str, float] = dict()
         # loading c50 values
@@ -53,7 +56,9 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
         for rttm_file in sorted(rttm_dir.iterdir()):
             uri = rttm_file.stem
             annotation = load_rttm(rttm_file)[uri]
-            annotated = Timeline([annotation.get_timeline().extent()])
+            audio_file = str(audio_dir / uri) + '.flac'
+            end = get_duration(filename = audio_file)
+            annotated = Timeline([ Segment(start=0, end=end)])
             # TODO: maybe use a specific mmap mode
             snr_array = np.load(str(snr_dir / f"{uri}_snr.npy"))
             snr_array = np.expand_dims(snr_array, axis=1)
