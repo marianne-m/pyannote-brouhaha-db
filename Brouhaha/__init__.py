@@ -27,6 +27,7 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._data_dir: Optional[Path] = None
+        print(f"All snr values will be brought back to [{SNR_MIN},{SNR_MAX}]")
 
     @property
     def data_dir(self) -> Path:
@@ -63,7 +64,6 @@ class NoisySpeakerDiarization(SpeakerDiarizationProtocol):
             annotated = Timeline([ Segment(start=0, end=end)])
             # TODO: maybe use a specific mmap mode
             snr_array = np.load(str(snr_dir / f"{uri}_snr.npy"))
-            print(f"All snr values will be brought back to [{SNR_MIN},{SNR_MAX}]")
             snr_array = np.where(snr_array < SNR_MIN, SNR_MIN, snr_array)
             snr_array = np.expand_dims(snr_array, axis=1)
             snr_feat = SlidingWindowFeature(snr_array, sliding_window=self.SNR_SLIDING_WINDOW)
